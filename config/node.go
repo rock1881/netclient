@@ -64,6 +64,22 @@ func GetNodes() NodeMap {
 	return Nodes
 }
 
+// LocalNodeAddresses returns a snapshot of this host's mesh addresses.
+// Used to constrain DNAT ACLs to services published on the local mesh endpoint.
+func LocalNodeAddresses() []net.IP {
+	nodeMutex.RLock()
+	defer nodeMutex.RUnlock()
+	var ips []net.IP
+	for _, n := range Nodes {
+		for _, ip := range []net.IP{n.Address.IP, n.Address6.IP} {
+			if ip != nil {
+				ips = append(ips, append(net.IP(nil), ip...))
+			}
+		}
+	}
+	return ips
+}
+
 // GetNode returns returns the node configuation of the specified network name
 func GetNode(k string) Node {
 	nodeMutex.RLock()

@@ -1918,7 +1918,7 @@ func (n *nftablesManager) AddAclRules(server string, aclRules map[string]models.
 		ruleTable = make(ruletable)
 	}
 	for _, aclRule := range aclRules {
-		rules := []ruleInfo{}
+		rules := n.addDNATAclRules(aclRule)
 		if _, ok := ruleTable[aclRule.ID]; !ok {
 			ruleTable[aclRule.ID] = rulesCfg{
 				rulesMap: make(map[string][]ruleInfo),
@@ -2143,7 +2143,7 @@ func (n *nftablesManager) UpsertAclRule(server string, aclRule models.AclRule) {
 	ruleTable[aclRule.ID] = rulesCfg{
 		rulesMap: make(map[string][]ruleInfo),
 	}
-	rules := []ruleInfo{}
+	rules := n.addDNATAclRules(aclRule)
 	if _, ok := ruleTable[aclRule.ID]; !ok {
 		ruleTable[aclRule.ID] = rulesCfg{
 			rulesMap: make(map[string][]ruleInfo),

@@ -1,4 +1,4 @@
-// This isolated integration probe uses the unmodified Netclient firewall package.
+// This isolated integration probe uses the Netclient firewall package.
 // Run only in disposable containers: firewall.Init resets Netmaker's own chains.
 package main
 
@@ -8,6 +8,8 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gravitl/netclient/config"
@@ -47,14 +49,34 @@ func main() {
 	if len(os.Args) > 3 && os.Args[3] == "nftables" {
 		config.Netclient().FirewallInUse = schema.FIREWALL_NFTABLES
 	}
-	b, err := os.ReadFile(os.Args[2])
-	check(err)
-	var update models.FwUpdate
-	check(json.Unmarshal(b, &update))
-	cleanup, err := firewall.Init()
-	check(err)
-	defer cleanup()
-	firewall.ProcessAclRules("direction-test", &update)
+	if os.Getenv("ACL_DIRECTION_ECHO_ONLY") != "1" {
+		if ip := net.ParseIP(os.Getenv("ACL_DIRECTION_LOCAL_ADDRESS")); ip != nil {
+			bits := 128
+			if ip.To4() != nil {
+				bits = 32
+			}
+			config.SetNodes([]models.Node{{CommonNode: models.CommonNode{Network: "test", Address: net.IPNet{IP: ip, Mask: net.CIDRMask(bits, bits)}}}})
+		}
+		cleanup, err := firewall.Init()
+		check(err)
+		defer cleanup()
+		reload := func() {
+			b, err := os.ReadFile(os.Args[2])
+			check(err)
+			var update models.FwUpdate
+			check(json.Unmarshal(b, &update))
+			firewall.ProcessAclRules("direction-test", &update)
+			fmt.Println("APPLIED")
+		}
+		reload()
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, syscall.SIGHUP)
+		go func() {
+			for range signals {
+				reload()
+			}
+		}()
+	}
 	l, err := net.Listen("tcp", ":18080")
 	check(err)
 	u, err := net.ListenPacket("udp", ":18081")

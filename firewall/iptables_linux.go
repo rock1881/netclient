@@ -853,7 +853,7 @@ func (i *iptablesManager) AddAclRules(server string, aclRules map[string]models.
 		ruleTable = make(ruletable)
 	}
 	for _, aclRule := range aclRules {
-		rules := []ruleInfo{}
+		rules := i.addDNATAclRules(aclRule)
 		if _, ok := ruleTable[aclRule.ID]; !ok {
 			ruleTable[aclRule.ID] = rulesCfg{
 				rulesMap: make(map[string][]ruleInfo),
@@ -1009,7 +1009,7 @@ func (i *iptablesManager) UpsertAclRule(server string, aclRule models.AclRule) {
 	ruleTable[aclRule.ID] = rulesCfg{
 		rulesMap: make(map[string][]ruleInfo),
 	}
-	rules := []ruleInfo{}
+	rules := i.addDNATAclRules(aclRule)
 	if _, ok := ruleTable[aclRule.ID]; !ok {
 		ruleTable[aclRule.ID] = rulesCfg{
 			rulesMap: make(map[string][]ruleInfo),
