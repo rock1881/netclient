@@ -17,3 +17,6 @@ launch.json
 backup/*
 dist/*
 /.idea
+
+# Local build artifacts and captured release packages
+.local-artifacts/
